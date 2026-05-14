@@ -47,34 +47,34 @@ by an in-repo self-test (`crypto.test.js`).
 
 ## Tech Stack
 
-| Layer            | Technology                                                       |
-| ---------------- | ---------------------------------------------------------------- |
-| Smart contracts  | Solidity `^0.8.20`, OpenZeppelin `^5.0.2` (`Ownable`, `AccessControl`, `ReentrancyGuard`) |
-| Dev framework    | Hardhat `^2.22` + `@nomicfoundation/hardhat-toolbox` `^5`        |
-| Frontend         | React `^18.3` + Vite `^5.2`                                       |
-| Styling          | Custom design-system CSS + Tailwind CSS `^3.4` (transitional)    |
-| Web3 library     | ethers.js `5.7.2`                                                |
-| Cryptography     | WebCrypto AES-GCM + `@noble/curves` (secp256k1), `@noble/hashes` (HKDF, SHA-256), `@noble/ciphers` (AES) — all `^2.2` |
-| Off-chain storage| IPFS via Pinata                                                  |
-| Networks         | Hardhat (local) · Ethereum Sepolia testnet                       |
+| Layer             | Technology                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Smart contracts   | Solidity `^0.8.20`, OpenZeppelin `^5.0.2` (`Ownable`, `AccessControl`, `ReentrancyGuard`)                             |
+| Dev framework     | Hardhat `^2.22` + `@nomicfoundation/hardhat-toolbox` `^5`                                                             |
+| Frontend          | React `^18.3` + Vite `^5.2`                                                                                           |
+| Styling           | Custom design-system CSS + Tailwind CSS `^3.4` (transitional)                                                         |
+| Web3 library      | ethers.js `5.7.2`                                                                                                     |
+| Cryptography      | WebCrypto AES-GCM + `@noble/curves` (secp256k1), `@noble/hashes` (HKDF, SHA-256), `@noble/ciphers` (AES) — all `^2.2` |
+| Off-chain storage | IPFS via Pinata                                                                                                       |
+| Networks          | Hardhat (local) · Ethereum Sepolia testnet                                                                            |
 
 ## Architecture
 
 ### Contracts
 
-| Contract              | Layer        | Purpose                                                                                                |
-| --------------------- | ------------ | ------------------------------------------------------------------------------------------------------ |
-| `PatientRegistry`     | Identity     | Self-registers patients; admin-registers doctors with license hash + hospital; doctors publish a one-time encryption pubkey here. |
-| `ConsentManager`      | Permissions  | Doctor requests access → patient grants/revokes, scoped per category, bounded by expiry; supports emergency (break-glass) invocations, all logged on-chain. |
-| `HealthRecordStorage` | Data index   | Patients store records (IPFS CID + category + self-wrapped key); doctors read via `getRecordForDoctor`, emitting a `RecordAccessed` event. |
+| Contract              | Layer       | Purpose                                                                                                                                                     |
+| --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PatientRegistry`     | Identity    | Self-registers patients; admin-registers doctors with license hash + hospital; doctors publish a one-time encryption pubkey here.                           |
+| `ConsentManager`      | Permissions | Doctor requests access → patient grants/revokes, scoped per category, bounded by expiry; supports emergency (break-glass) invocations, all logged on-chain. |
+| `HealthRecordStorage` | Data index  | Patients store records (IPFS CID + category + self-wrapped key); doctors read via `getRecordForDoctor`, emitting a `RecordAccessed` event.                  |
 
 ### Roles
 
-| Role     | Can                                                                                                                                              |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Patient  | Self-register, upload encrypted records, grant/revoke doctor access per category with optional expiry, view their own audit history.             |
-| Doctor   | Publish a one-time encryption pubkey, request access from a patient, view granted records (logs each read), invoke emergency access (also logged). |
-| Admin    | (Deployer / contract owner) register and revoke doctors with on-chain reason, view platform-wide stats and emergency-access audit feed.          |
+| Role    | Can                                                                                                                                                |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Patient | Self-register, upload encrypted records, grant/revoke doctor access per category with optional expiry, view their own audit history.               |
+| Doctor  | Publish a one-time encryption pubkey, request access from a patient, view granted records (logs each read), invoke emergency access (also logged). |
+| Admin   | (Deployer / contract owner) register and revoke doctors with on-chain reason, view platform-wide stats and emergency-access audit feed.            |
 
 ## Project Structure
 
@@ -232,4 +232,4 @@ local Hardhat node — never deploy this to Ethereum mainnet.
 
 ## License
 
-MIT
+[MIT](LICENSE)
