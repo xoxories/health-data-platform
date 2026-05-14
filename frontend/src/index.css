@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply bg-surface text-slate-900;
+  }
+  .dark body {
+    @apply bg-surface-dark text-slate-100;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    @apply font-mono;
+  }
+}
