@@ -14,7 +14,9 @@ import { Card as UICard } from "./ui/Card.jsx";
 import { Button as UIButton } from "./ui/Button.jsx";
 import { StatusPill } from "./ui/StatusPill.jsx";
 import { AddressDisplay } from "./ui/AddressDisplay.jsx";
-import { StatusPipeline } from "./ui/StatusPipeline.jsx";
+import { Icon } from "./ui/Icon.jsx";
+import { Stat as UIStat } from "./ui/Stat.jsx";
+import { Modal as UIModal } from "./ui/Modal.jsx";
 
 // ---------------------------------------------------------------------
 // Constants
@@ -74,7 +76,22 @@ function formatAbsolute(unixSeconds) {
 // Main component
 // ---------------------------------------------------------------------
 
-export default function AdminPanel({ account, contracts }) {
+// Per-route page heading shown in the dashboard's own header (above the
+// route body). Distinct from the topbar breadcrumb in App.jsx → Topbar.
+const ROUTE_TITLES = {
+  overview: "Admin Panel",
+  doctors: "Registered doctors",
+  register: "Register new doctor",
+  emergency: "Emergency access audit",
+  activity: "Activity feed",
+};
+
+export default function AdminPanel({
+  account,
+  contracts,
+  route = "overview",
+  setRoute = () => {},
+}) {
   const registryAvailable = Boolean(contracts?.patientRegistry);
   const storageAvailable = Boolean(contracts?.healthRecordStorage);
   const consentAvailable = Boolean(contracts?.consentManager);
@@ -101,13 +118,79 @@ export default function AdminPanel({ account, contracts }) {
     );
   }
 
+  const currentTitle = ROUTE_TITLES[route] || ROUTE_TITLES.overview;
+
+  // --- Body per route. Data still flows from the same per-sub-component
+  // useEffect's that have always loaded it — this is purely a JSX swap. ---
+  let body;
+  if (route === "doctors") {
+    body = (
+      <RegisteredDoctorsTable
+        contracts={contracts}
+        refreshKey={refreshCount}
+        onRevoked={refreshAll}
+        setRoute={setRoute}
+        expanded
+      />
+    );
+  } else if (route === "register") {
+    body = (
+      <RegisterDoctorCard
+        contracts={contracts}
+        adminAccount={account}
+        onRegistered={refreshAll}
+        setRoute={setRoute}
+      />
+    );
+  } else if (route === "emergency") {
+    body = consentAvailable ? (
+      <EmergencyAccessFeed
+        contracts={contracts}
+        refreshKey={refreshCount}
+        full
+      />
+    ) : null;
+  } else if (route === "activity") {
+    body =
+      storageAvailable && consentAvailable ? (
+        <RecentActivityFeed
+          contracts={contracts}
+          refreshKey={refreshCount}
+        />
+      ) : null;
+  } else {
+    // overview — stats + doctors table (with action button) + audit + activity
+    body = (
+      <>
+        <SystemStats contracts={contracts} refreshKey={refreshCount} />
+        <RegisteredDoctorsTable
+          contracts={contracts}
+          refreshKey={refreshCount}
+          onRevoked={refreshAll}
+          setRoute={setRoute}
+        />
+        {consentAvailable && (
+          <EmergencyAccessFeed
+            contracts={contracts}
+            refreshKey={refreshCount}
+          />
+        )}
+        {storageAvailable && consentAvailable && (
+          <RecentActivityFeed
+            contracts={contracts}
+            refreshKey={refreshCount}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* 1. Header */}
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            Admin Panel
+            {currentTitle}
           </h2>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Connected as <AddressDisplay address={account} />
@@ -120,41 +203,7 @@ export default function AdminPanel({ account, contracts }) {
         <SecondaryButton onClick={refreshAll}>Refresh</SecondaryButton>
       </header>
 
-      {/* 2. System stats */}
-      <SystemStats
-        contracts={contracts}
-        refreshKey={refreshCount}
-      />
-
-      {/* 3. Register new doctor */}
-      <RegisterDoctorCard
-        contracts={contracts}
-        adminAccount={account}
-        onRegistered={refreshAll}
-      />
-
-      {/* 4. Registered doctors table */}
-      <RegisteredDoctorsTable
-        contracts={contracts}
-        refreshKey={refreshCount}
-        onRevoked={refreshAll}
-      />
-
-      {/* 5. Emergency access audit feed */}
-      {consentAvailable && (
-        <EmergencyAccessFeed
-          contracts={contracts}
-          refreshKey={refreshCount}
-        />
-      )}
-
-      {/* 6. Recent activity feed */}
-      {storageAvailable && consentAvailable && (
-        <RecentActivityFeed
-          contracts={contracts}
-          refreshKey={refreshCount}
-        />
-      )}
+      {body}
     </div>
   );
 }
@@ -255,29 +304,39 @@ function SystemStats({ contracts, refreshKey }) {
     load();
   }, [load, refreshKey]);
 
+  // Render values: while loading, show the design-system "—" dash so the
+  // Stat primitive doesn't try to format a null.
+  const v = (n) => (n == null ? "—" : n);
+
   return (
     <section>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Patients Registered" value={stats.patients} />
-        <StatCard label="Active Doctors" value={stats.activeDoctors} />
-        <StatCard label="Revoked Doctors" value={stats.revokedDoctors} />
-        <StatCard label="Total Records Uploaded" value={stats.records} />
+      <div className="stats-grid">
+        <UIStat
+          label="Patients"
+          icon="user"
+          value={v(stats.patients)}
+        />
+        <UIStat
+          label="Active doctors"
+          icon="doctor"
+          value={v(stats.activeDoctors)}
+          tone="ok"
+        />
+        <UIStat
+          label="Revoked doctors"
+          icon="x"
+          value={v(stats.revokedDoctors)}
+          tone="warn"
+        />
+        <UIStat
+          label="Records on chain"
+          icon="records"
+          value={v(stats.records)}
+          tone="cyan"
+        />
       </div>
       {error && <ErrorBox>{error}</ErrorBox>}
     </section>
-  );
-}
-
-function StatCard({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-surface-darkAlt">
-      <div className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-        {value == null ? "—" : value}
-      </div>
-      <div className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-        {label}
-      </div>
-    </div>
   );
 }
 
@@ -487,7 +546,13 @@ function RegisterDoctorCard({ contracts, adminAccount, onRegistered }) {
 // 4. Registered doctors table + revoke modal
 // ---------------------------------------------------------------------
 
-function RegisteredDoctorsTable({ contracts, refreshKey, onRevoked }) {
+function RegisteredDoctorsTable({
+  contracts,
+  refreshKey,
+  onRevoked,
+  setRoute,
+  expanded,
+}) {
   const [rows, setRows] = useState(null); // null = loading, [] = empty
   const [error, setError] = useState(null);
   const [revokeTarget, setRevokeTarget] = useState(null); // row being revoked
@@ -579,43 +644,82 @@ function RegisteredDoctorsTable({ contracts, refreshKey, onRevoked }) {
     load();
   }, [load, refreshKey]);
 
+  const totalText =
+    rows == null
+      ? "loading…"
+      : rows.length === 1
+        ? "1 total"
+        : `${rows.length} total`;
+
+  // Header action: jump to the Register view. Hidden if no setRoute was
+  // provided (defensive — shouldn't happen, but keeps the component
+  // standalone if reused elsewhere later).
+  const action = setRoute ? (
+    <PrimaryButton size="sm" onClick={() => setRoute("register")}>
+      <Icon name="plus" size={14} />
+      Register doctor
+    </PrimaryButton>
+  ) : null;
+
   return (
-    <Card title="Registered Doctors">
-      {error && <ErrorBox>{error}</ErrorBox>}
+    <UICard
+      title="Registered doctors"
+      icon="doctor"
+      sub={totalText}
+      action={action}
+      flush
+    >
+      {error && (
+        <div style={{ padding: "0 16px 12px" }}>
+          <ErrorBox>{error}</ErrorBox>
+        </div>
+      )}
 
       {rows === null && <CenteredNotice>Loading doctors…</CenteredNotice>}
 
       {rows && rows.length === 0 && !error && (
-        <p className="text-sm text-slate-500">
-          No doctors registered yet. Use the form above to register the
-          first one.
-        </p>
+        <div style={{ padding: 24 }}>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            No doctors registered yet.{" "}
+            {setRoute ? (
+              <button
+                type="button"
+                onClick={() => setRoute("register")}
+                className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-400"
+              >
+                Register the first one
+              </button>
+            ) : (
+              "Use the Register Doctor view to register the first one."
+            )}
+            .
+          </p>
+        </div>
       )}
 
       {rows && rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500 dark:bg-slate-900/40 dark:text-slate-400">
-              <tr>
-                <th className="px-3 py-2">Address</th>
-                <th className="px-3 py-2">Hospital</th>
-                <th className="px-3 py-2">License hash</th>
-                <th className="px-3 py-2">Registered</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-surface-darkAlt">
-              {rows.map((r) => (
-                <DoctorRow
-                  key={r.address}
-                  row={r}
-                  onRevokeClick={() => setRevokeTarget(r)}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Address</th>
+              <th>Hospital</th>
+              {expanded && <th>License hash</th>}
+              <th>Registered</th>
+              <th>Status</th>
+              <th style={{ width: 60, textAlign: "right" }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <DoctorRow
+                key={r.address}
+                row={r}
+                expanded={expanded}
+                onRevokeClick={() => setRevokeTarget(r)}
+              />
+            ))}
+          </tbody>
+        </table>
       )}
 
       {revokeTarget && (
@@ -629,11 +733,11 @@ function RegisteredDoctorsTable({ contracts, refreshKey, onRevoked }) {
           }}
         />
       )}
-    </Card>
+    </UICard>
   );
 }
 
-function DoctorRow({ row, onRevokeClick }) {
+function DoctorRow({ row, onRevokeClick, expanded }) {
   const [copyMsg, setCopyMsg] = useState(null);
 
   async function copy(text) {
@@ -643,54 +747,88 @@ function DoctorRow({ row, onRevokeClick }) {
   }
 
   return (
-    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-      <td className="px-3 py-3">
+    <tr>
+      <td>
         <AddressDisplay address={row.address} />
       </td>
-      <td className="px-3 py-3 text-slate-700 dark:text-slate-300">
-        {row.hospital || "—"}
-      </td>
-      <td className="px-3 py-3">
-        <button
-          type="button"
-          onClick={() => copy(row.licenseHash)}
-          title={row.licenseHash}
-          className="font-mono text-xs text-slate-500 underline-offset-2 hover:underline dark:text-slate-400"
-        >
-          {shortHex(row.licenseHash)}
-        </button>
-        {copyMsg && (
-          <span className="ml-2 text-[10px] text-emerald-700 dark:text-emerald-400">
-            {copyMsg}
-          </span>
-        )}
-      </td>
-      <td className="px-3 py-3 text-slate-600 dark:text-slate-400">
+      <td style={{ color: "var(--ink-2)" }}>{row.hospital || "—"}</td>
+      {expanded && (
+        <td className="num-cell">
+          <button
+            type="button"
+            onClick={() => copy(row.licenseHash)}
+            title={row.licenseHash}
+            className="font-mono text-xs underline-offset-2 hover:underline"
+            style={{
+              color: "var(--ink-3)",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            {shortHex(row.licenseHash)}
+          </button>
+          {copyMsg && (
+            <span
+              style={{
+                marginLeft: 6,
+                fontSize: 10,
+                color: "var(--ok)",
+              }}
+            >
+              {copyMsg}
+            </span>
+          )}
+        </td>
+      )}
+      <td style={{ color: "var(--ink-2)" }}>
         {formatAbsolute(row.registeredAt)}
       </td>
-      <td className="px-3 py-3">
+      <td>
         {row.isActive ? (
-          <StatusPill status="active" />
+          <StatusPill status="active">Active</StatusPill>
         ) : (
           <div>
-            <StatusPill status="revoked" />
+            <StatusPill status="revoked">Revoked</StatusPill>
             {row.revocation?.reason && (
-              <div className="mt-1 max-w-xs text-[11px] italic text-slate-500 dark:text-slate-400">
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "var(--ink-3)",
+                  marginTop: 4,
+                  maxWidth: 280,
+                }}
+              >
                 {row.revocation.reason}
               </div>
             )}
           </div>
         )}
       </td>
-      <td className="px-3 py-3 text-right">
+      <td style={{ textAlign: "right" }}>
         {row.isActive ? (
-          <DangerButton size="sm" onClick={onRevokeClick}>
-            Revoke
-          </DangerButton>
+          <button
+            type="button"
+            className="icon-btn"
+            style={{ width: 30, height: 30 }}
+            title="Revoke"
+            onClick={onRevokeClick}
+            aria-label="Revoke doctor"
+          >
+            <Icon name="x" size={14} />
+          </button>
         ) : (
-          <DangerButton size="sm" disabled>
-            Revoke
-          </DangerButton>
+          <button
+            type="button"
+            className="icon-btn"
+            style={{ width: 30, height: 30, opacity: 0.4 }}
+            disabled
+            title="Already revoked"
+            aria-label="Already revoked"
+          >
+            <Icon name="x" size={14} />
+          </button>
         )}
       </td>
     </tr>
@@ -738,47 +876,46 @@ function RevokeDoctorModal({ row, contracts, onClose, onRevoked }) {
     }[status] || "Revoke";
 
   return (
-    <ModalOverlay onClose={pending ? undefined : onClose}>
-      <h3 className="mb-3 font-display text-lg font-bold text-slate-900 dark:text-slate-50">
-        Revoke doctor access
-      </h3>
-      <p className="mb-4 text-sm text-slate-700">
-        Doctor <span className="font-mono">{shortAddr(row.address)}</span> at{" "}
-        <strong>{row.hospital || "—"}</strong> will lose the DOCTOR_ROLE.
-        All existing patient grants for this doctor become unenforceable.
-        This cannot be undone — to re-enable, the doctor must be
-        registered again with a new license hash.
-      </p>
-
-      <label className="mb-1 block text-xs font-medium text-slate-700">
-        Revocation reason{" "}
-        <span className="text-slate-400">
-          ({MAX_REASON_LEN} chars max — visible in the on-chain event log)
+    <UIModal
+      open={true}
+      onClose={pending ? undefined : onClose}
+      title="Revoke doctor access"
+      subtitle={`Doctor ${shortAddr(row.address)} at ${row.hospital || "—"} will lose DOCTOR_ROLE. Existing patient grants become unenforceable.`}
+      width={560}
+      footer={
+        <>
+          <SecondaryButton onClick={onClose} disabled={pending}>
+            Cancel
+          </SecondaryButton>
+          <DangerButton onClick={confirm} disabled={pending}>
+            {pending ? <Spinner /> : null}
+            {buttonLabel}
+          </DangerButton>
+        </>
+      }
+    >
+      <div className="field">
+        <span className="label">
+          Reason{" "}
+          <span style={{ color: "var(--ink-3)", fontWeight: 400 }}>
+            ({MAX_REASON_LEN} chars max — visible in the on-chain event log)
+          </span>
         </span>
-      </label>
-      <textarea
-        rows={3}
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-        disabled={pending}
-        maxLength={MAX_REASON_LEN + 1 /* allow visual hint of overflow */}
-        className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100"
-      />
-      <p className="mt-1 text-[11px] text-slate-400">
-        {reason.length}/{MAX_REASON_LEN}
-      </p>
-
-      <div className="mt-5 flex justify-end gap-2">
-        <SecondaryButton onClick={onClose} disabled={pending}>
-          Cancel
-        </SecondaryButton>
-        <DangerButton onClick={confirm} disabled={pending}>
-          {pending ? <Spinner /> : null}
-          {buttonLabel}
-        </DangerButton>
+        <textarea
+          className="textarea"
+          rows={3}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          disabled={pending}
+          maxLength={MAX_REASON_LEN + 1}
+          placeholder="e.g. Compliance violation — unauthorized data sharing"
+        />
+        <span className="hint">
+          {reason.length}/{MAX_REASON_LEN}
+        </span>
       </div>
       {error && <ErrorBox>{error}</ErrorBox>}
-    </ModalOverlay>
+    </UIModal>
   );
 }
 
@@ -786,7 +923,7 @@ function RevokeDoctorModal({ row, contracts, onClose, onRevoked }) {
 // 5. Emergency access audit feed
 // ---------------------------------------------------------------------
 
-function EmergencyAccessFeed({ contracts, refreshKey }) {
+function EmergencyAccessFeed({ contracts, refreshKey, full }) {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
 
@@ -829,8 +966,25 @@ function EmergencyAccessFeed({ contracts, refreshKey }) {
   }, [load, refreshKey]);
 
   return (
-    <Card title="Emergency Access Audit">
-      <p className="mb-4 text-sm text-slate-600">
+    <UICard
+      title="Emergency access audit"
+      icon="emergency"
+      sub="Read-only chain of break-glass events"
+      flush
+    >
+      {/* Explainer paragraph preserved — it's the section's security
+          context for the report. Padded inset so flush card body still
+          reads cleanly. */}
+      <div
+        style={{
+          padding: "0 18px",
+          marginTop: 14,
+          marginBottom: 14,
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: "var(--ink-2)",
+        }}
+      >
         Emergency access (a.k.a. <em>break-glass</em>) lets a registered
         doctor read a patient's records without explicit consent — for
         cases like an unconscious patient in the ER. Every invocation is
@@ -839,51 +993,93 @@ function EmergencyAccessFeed({ contracts, refreshKey }) {
         platform's threat model relies on: privacy is not absolute, but
         every override is observable, attributable, and reviewable after
         the fact.
-      </p>
+      </div>
 
-      {error && <ErrorBox>{error}</ErrorBox>}
+      {error && (
+        <div style={{ padding: "0 18px 12px" }}>
+          <ErrorBox>{error}</ErrorBox>
+        </div>
+      )}
       {rows === null && <CenteredNotice>Loading audit feed…</CenteredNotice>}
 
       {rows && rows.length === 0 && !error && (
-        <p className="text-sm text-slate-500">
-          No emergency access has been invoked. This is the break-glass
-          audit trail — any time a doctor accesses a record without
-          explicit consent (e.g. life-threatening emergency), it will
-          appear here with the justification they provided.
-        </p>
+        <div style={{ padding: "0 18px 18px" }}>
+          <p
+            style={{
+              fontSize: 13,
+              color: "var(--ink-3)",
+              lineHeight: 1.5,
+            }}
+          >
+            No emergency access has been invoked. Any time a doctor
+            accesses a record without explicit consent (e.g.
+            life-threatening emergency), it will appear here with the
+            justification they provided.
+          </p>
+        </div>
       )}
 
       {rows && rows.length > 0 && (
-        <ul className="divide-y divide-slate-100">
+        <div className="timeline">
           {rows.map((r, i) => (
-            <li key={`${r.blockNumber}-${i}`} className="py-3">
-              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2 text-xs">
-                <div className="space-x-2">
-                  <span className="text-slate-500">Doctor</span>
-                  <CopyableAddr addr={r.doctor} />
-                  <span className="text-slate-500">→ Patient</span>
-                  <CopyableAddr addr={r.patient} />
-                </div>
-                <span
-                  className="text-slate-400"
-                  title={formatAbsolute(r.timestamp)}
-                >
-                  {timestampToRelative(r.timestamp)}
-                </span>
+            <div key={`${r.blockNumber}-${i}`} className="row emg">
+              <div className="marker">
+                <Icon name="emergency" size={14} />
               </div>
-              <div className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                <span className="text-xs font-semibold uppercase text-amber-700">
-                  Justification
-                </span>
-                <div className="mt-1 whitespace-pre-wrap break-words">
+              <div className="body">
+                <div className="head">
+                  <span>
+                    <strong>{shortAddr(r.doctor)}</strong> accessed records of{" "}
+                    <strong>{shortAddr(r.patient)}</strong>
+                  </span>
+                  <StatusPill status="emergency">Emergency</StatusPill>
+                </div>
+                <div className="meta">
+                  <AddressDisplay address={r.doctor} label="doctor" />
+                  <AddressDisplay address={r.patient} label="patient" />
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 10px",
+                    background: "var(--danger-soft)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    color: "var(--ink-2)",
+                    borderLeft: "3px solid var(--danger)",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  <strong style={{ color: "var(--danger)" }}>
+                    Justification:{" "}
+                  </strong>
                   {r.reason}
                 </div>
+                {full && (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      fontSize: 11.5,
+                      color: "var(--ink-3)",
+                      fontFamily: "'Geist Mono Variable', monospace",
+                    }}
+                  >
+                    block {r.blockNumber}
+                  </div>
+                )}
               </div>
-            </li>
+              <div
+                className="time"
+                title={formatAbsolute(r.timestamp)}
+              >
+                {timestampToRelative(r.timestamp)}
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
-    </Card>
+    </UICard>
   );
 }
 
@@ -966,76 +1162,103 @@ function RecentActivityFeed({ contracts, refreshKey }) {
     load();
   }, [load, refreshKey]);
 
+  // kind → { icon, timeline tone class, label }. Mirrors the prototype's
+  // iconMap in screen-admin.jsx ActivityFeed: grants are positive (ok),
+  // revokes warn, uploads are neutral access events (acc).
+  const KIND_META = {
+    granted: { icon: "shieldcheck", tone: "ok", label: "Granted" },
+    revoked: { icon: "x", tone: "warn", label: "Revoked" },
+    stored: { icon: "upload", tone: "acc", label: "Stored" },
+  };
+
   return (
-    <Card title="Recent Activity">
-      {error && <ErrorBox>{error}</ErrorBox>}
+    <UICard
+      title="Recent activity"
+      icon="activity"
+      sub="Combined timeline of grants, revokes, and uploads"
+      flush
+    >
+      {error && (
+        <div style={{ padding: "0 18px 12px" }}>
+          <ErrorBox>{error}</ErrorBox>
+        </div>
+      )}
       {rows === null && <CenteredNotice>Loading activity…</CenteredNotice>}
 
       {rows && rows.length === 0 && !error && (
-        <p className="text-sm text-slate-500">No recent activity.</p>
+        <div style={{ padding: "0 18px 18px" }}>
+          <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
+            No recent activity.
+          </p>
+        </div>
       )}
 
       {rows && rows.length > 0 && (
-        <ul className="divide-y divide-slate-100">
-          {rows.map((r) => (
-            <li
-              key={r.key}
-              className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm"
-            >
-              <div className="flex items-baseline gap-2">
-                {r.kind === "granted" && (
-                  <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
-                    Granted
-                  </span>
-                )}
-                {r.kind === "revoked" && (
-                  <span className="rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-800">
-                    Revoked
-                  </span>
-                )}
-                {r.kind === "stored" && (
-                  <span className="rounded bg-brand-50 px-2 py-0.5 text-[10px] font-bold uppercase text-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
-                    Stored
-                  </span>
-                )}
-                {r.kind === "stored" ? (
-                  <span className="text-slate-700">
-                    record <span className="font-mono">#{r.recordId}</span> by{" "}
-                    <CopyableAddr addr={r.patient} />
-                  </span>
-                ) : (
-                  <span className="text-slate-700">
-                    <CopyableAddr addr={r.patient} /> ↔{" "}
-                    <CopyableAddr addr={r.doctor} />
-                  </span>
-                )}
+        <div className="timeline">
+          {rows.map((r) => {
+            const m = KIND_META[r.kind] || {
+              icon: "activity",
+              tone: "acc",
+              label: r.kind,
+            };
+            return (
+              <div key={r.key} className={`row ${m.tone}`}>
+                <div className="marker">
+                  <Icon name={m.icon} size={14} />
+                </div>
+                <div className="body">
+                  <div className="head">
+                    <span>
+                      <strong>{m.label}</strong>
+                      {r.kind === "stored" ? (
+                        <>
+                          {" — record "}
+                          <span
+                            style={{
+                              fontFamily: "'Geist Mono Variable', monospace",
+                              color: "var(--ink-2)",
+                            }}
+                          >
+                            #{r.recordId}
+                          </span>
+                          {" by "}
+                          <strong>{shortAddr(r.patient)}</strong>
+                        </>
+                      ) : (
+                        <>
+                          {" — "}
+                          <strong>{shortAddr(r.patient)}</strong>
+                          {" ↔ "}
+                          <strong>{shortAddr(r.doctor)}</strong>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  <div className="meta">
+                    {r.kind === "stored" ? (
+                      <AddressDisplay address={r.patient} label="patient" />
+                    ) : (
+                      <>
+                        <AddressDisplay address={r.patient} label="patient" />
+                        <AddressDisplay address={r.doctor} label="doctor" />
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="time" title={formatAbsolute(r.timestamp)}>
+                  {timestampToRelative(r.timestamp)}
+                </div>
               </div>
-              <span
-                className="text-xs text-slate-400"
-                title={formatAbsolute(r.timestamp)}
-              >
-                {timestampToRelative(r.timestamp)}
-              </span>
-            </li>
-          ))}
-        </ul>
+            );
+          })}
+        </div>
       )}
-    </Card>
+    </UICard>
   );
 }
 
 // ---------------------------------------------------------------------
-// Shared UI primitives
-// ---------------------------------------------------------------------
-
-function CopyableAddr({ addr }) {
-  // Forwarding to the shared AddressDisplay so click-to-copy, "Copied!"
-  // feedback, and dark-mode styling are uniform with the rest of the app.
-  return <AddressDisplay address={addr} />;
-}
-
-// ---------------------------------------------------------------------
-// Local primitives are now thin wrappers over the shared UI library
+// Local primitives are thin wrappers over the shared UI library
 // (frontend/src/components/ui/). The original call sites keep working
 // without changes because the wrapper names match.
 // ---------------------------------------------------------------------
@@ -1105,18 +1328,3 @@ function CenteredNotice({ children }) {
   );
 }
 
-function ModalOverlay({ children, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-surface-darkAlt"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}

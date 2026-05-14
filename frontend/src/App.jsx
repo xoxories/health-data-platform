@@ -15,10 +15,14 @@ import PatientDashboard from "./components/PatientDashboard.jsx";
 import DoctorDashboard from "./components/DoctorDashboard.jsx";
 import AdminPanel from "./components/AdminPanel.jsx";
 
+// `Card` is still used by RoleErrorBanner (defined below). The other
+// Stage-1 primitives that used to power the old <Header /> + <NoMetaMask />
+// helpers are now imported directly by ConnectWallet / Sidebar / Topbar,
+// not here.
 import { Card } from "./components/ui/Card.jsx";
-import { Button } from "./components/ui/Button.jsx";
-import { AddressDisplay } from "./components/ui/AddressDisplay.jsx";
-import { ThemeToggle } from "./components/ui/ThemeToggle.jsx";
+
+import { Sidebar } from "./components/shell/Sidebar.jsx";
+import { Topbar } from "./components/shell/Topbar.jsx";
 
 // ---------------------------------------------------------------------
 // Constants
@@ -86,6 +90,17 @@ export default function App() {
   const [role, setRole] = useState(null); // 'admin' | 'doctor' | 'patient' | 'none'
   const [detecting, setDetecting] = useState(false);
   const [roleError, setRoleError] = useState(null);
+
+  // Phase 7 — Stage 3: which sub-view within the active role's sidebar is
+  // selected. Defaults to 'overview' on every role-change. The dashboard
+  // components RECEIVE this prop but are not required to consume it yet;
+  // they continue to render their full current content regardless.
+  const [route, setRoute] = useState("overview");
+  // Reset route when the role flips so each role lands on its own
+  // "Overview" entry rather than inheriting the previous role's key.
+  useEffect(() => {
+    setRoute("overview");
+  }, [role]);
 
   const wrongNetwork =
     chainId != null && !SUPPORTED_CHAIN_IDS.includes(chainId);
@@ -261,6 +276,15 @@ export default function App() {
   // (const-declared arrow functions are not hoisted — referencing it from
   // JSX defined above this line would throw a TDZ error.)
 
+  // "Disconnect" the wallet (locally — MetaMask has no programmatic
+  // disconnect API). Clears React state so the connect gate re-renders;
+  // user can re-approve from MetaMask to come back.
+  const disconnectWallet = useCallback(() => {
+    setAccount(null);
+    setRole(null);
+    setRoute("overview");
+  }, []);
+
   const connectWallet = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) {
       throw new Error("MetaMask is not installed.");
@@ -285,26 +309,94 @@ export default function App() {
 
   // -------- Render --------
 
-  return (
-    <div className="min-h-screen bg-surface-alt text-slate-900 dark:bg-surface-dark dark:text-slate-100">
-      <Header account={account} chainId={chainId} />
+  // Not-connected states (no MetaMask OR no account) render the hero
+  // landing. ConnectWallet itself handles both cases inline:
+  //   - hasMetaMask=true  → Connect button + How-it-works button
+  //   - hasMetaMask=false → "Please install MetaMask" callout
+  // The wrong-network banner is preserved at the very top of the page
+  // so users see network mismatches even before connecting.
+  if (!hasMetaMask || !account) {
+    return (
+      <div className="app">
+        <div className="mesh-bg">
+          <div className="mesh-c" />
+        </div>
+        {wrongNetwork && <WrongNetworkBanner chainId={chainId} />}
+        <ConnectGate onConnect={connectWallet} />
+      </div>
+    );
+  }
 
-      {wrongNetwork && <WrongNetworkBanner chainId={chainId} />}
-
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        {!hasMetaMask ? (
-          <NoMetaMask />
-        ) : !account ? (
-          <ConnectGate onConnect={connectWallet} />
-        ) : detecting ? (
+  // Connected but still resolving role. Brief intermediate state.
+  if (detecting) {
+    return (
+      <div className="app">
+        <div className="mesh-bg">
+          <div className="mesh-c" />
+        </div>
+        {wrongNetwork && <WrongNetworkBanner chainId={chainId} />}
+        <main
+          style={{
+            minHeight: "100vh",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
           <CenteredNotice>Detecting role…</CenteredNotice>
-        ) : (
-          <>
+        </main>
+      </div>
+    );
+  }
+
+  // -------- Render: authenticated state → wrap in shell --------
+  // Sidebar nav-set is keyed by role; for the "none" case (unregistered
+  // user landing on PatientDashboard's register CTA), reuse the patient
+  // sidebar so they see a navigation rail rather than a barren shell.
+  const shellRole = role === "admin" || role === "doctor" ? role : "patient";
+  const labelFromName = networkName(chainId);
+  const networkLabel =
+    chainId != null ? `${labelFromName} · ${chainId}` : labelFromName;
+
+  const dashboardTitles = {
+    admin: "Admin Panel",
+    doctor: "Doctor Dashboard",
+    patient: "Patient Dashboard",
+  };
+  const topbarTitle = dashboardTitles[shellRole] || "Dashboard";
+
+  return (
+    <div className="app">
+      <div className="shell">
+        <Sidebar
+          role={shellRole}
+          route={route}
+          setRoute={setRoute}
+          walletAddr={account}
+          networkLabel={networkLabel}
+        />
+        <div className="main-col">
+          <Topbar
+            title={topbarTitle}
+            networkLabel={networkLabel}
+            onDisconnect={disconnectWallet}
+          />
+          <main className="content">
+            {wrongNetwork && <WrongNetworkBanner chainId={chainId} />}
             {roleError && <RoleErrorBanner message={roleError} />}
             {role === "admin" ? (
-              <AdminPanel account={account} contracts={contracts} />
+              <AdminPanel
+                account={account}
+                contracts={contracts}
+                route={route}
+                setRoute={setRoute}
+              />
             ) : role === "doctor" ? (
-              <DoctorDashboard account={account} contracts={contracts} />
+              <DoctorDashboard
+                account={account}
+                contracts={contracts}
+                route={route}
+                setRoute={setRoute}
+              />
             ) : (
               // Default to PatientDashboard for both registered patients and
               // unregistered users so the dashboard can show a register-as-patient
@@ -313,11 +405,13 @@ export default function App() {
                 account={account}
                 role={role}
                 contracts={contracts}
+                route={route}
+                setRoute={setRoute}
               />
             )}
-          </>
-        )}
-      </main>
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
@@ -325,42 +419,6 @@ export default function App() {
 // ---------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------
-
-function Header({ account, chainId }) {
-  return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-surface-dark/95">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-accent-500 font-display font-bold text-white shadow-sm">
-            H
-          </div>
-          <div>
-            <h1 className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
-              Health Data Platform
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Decentralized health-record sharing
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {account && (
-            <>
-              <span className="hidden rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 sm:inline-block">
-                {networkName(chainId)}
-              </span>
-              <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 dark:border-slate-700 dark:bg-surface-darkAlt">
-                <AddressDisplay address={account} size="sm" />
-              </span>
-            </>
-          )}
-          <ThemeToggle />
-        </div>
-      </div>
-    </header>
-  );
-}
 
 function WrongNetworkBanner({ chainId }) {
   return (
@@ -397,28 +455,6 @@ function RoleErrorBanner({ message }) {
         deployed to (Sepolia, chain ID {SEPOLIA_CHAIN_ID}, or your local
         Hardhat node).
       </p>
-    </Card>
-  );
-}
-
-function NoMetaMask() {
-  return (
-    <Card tone="warning" className="mx-auto max-w-md text-center">
-      <h2 className="font-display text-lg font-semibold text-amber-900 dark:text-amber-200">
-        MetaMask is not installed
-      </h2>
-      <p className="mt-2 mb-5 text-sm text-amber-800 dark:text-amber-200/80">
-        This dApp requires the MetaMask browser extension to interact with the
-        Ethereum blockchain.
-      </p>
-      <a
-        href="https://metamask.io/download/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block rounded-lg bg-amber-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-amber-700"
-      >
-        Install MetaMask
-      </a>
     </Card>
   );
 }

@@ -1,70 +1,37 @@
+import { Icon } from "./Icon.jsx";
+
 /**
- * Primary / secondary / danger / ghost button with size + loading variants.
+ * Ported from frontend/_design-reference/ui.jsx into an ES module.
+ * Uses the design-system.css class set: `.btn.btn-primary`, `.btn-sm`,
+ * `.btn-lg`, etc. The `.sp` class is the design system's spinner.
  *
- *   <Button>Click me</Button>
- *   <Button variant="danger" size="sm" loading>Confirming…</Button>
- *
- * Loading state shows an inline spinner and forces disabled. Any other
- * props (type, onClick, form, aria-*) pass through to the underlying
- * <button>.
+ * Backward-compatible with the previous Phase-6 Button — same call sites
+ * (variant, size, loading, disabled, children, onClick, type, etc.).
  */
 export function Button({
   variant = "primary",
   size = "md",
-  loading = false,
-  disabled = false,
+  loading,
+  icon,
+  iconRight,
   children,
   className = "",
   ...rest
 }) {
-  const sizing =
-    size === "sm"
-      ? "px-3 py-1.5 text-xs"
-      : size === "lg"
-        ? "px-5 py-3 text-base"
-        : "px-4 py-2 text-sm";
-
-  const base =
-    "inline-flex items-center justify-center gap-2 rounded-lg font-medium " +
-    "shadow-sm transition focus:outline-none focus-visible:ring-2 " +
-    "focus-visible:ring-brand-500 focus-visible:ring-offset-2 " +
-    "dark:focus-visible:ring-offset-surface-dark " +
-    "disabled:cursor-not-allowed disabled:opacity-60";
-
-  const palette =
-    variant === "primary"
-      ? "bg-brand-600 text-white hover:bg-brand-700 " +
-        "disabled:bg-brand-400"
-      : variant === "danger"
-        ? "bg-red-600 text-white hover:bg-red-700 " +
-          "disabled:bg-red-400"
-        : variant === "ghost"
-          ? "bg-transparent text-slate-600 hover:bg-slate-100 " +
-            "dark:text-slate-300 dark:hover:bg-surface-darkAlt " +
-            "shadow-none"
-          : // secondary
-            "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 " +
-            "dark:border-slate-700 dark:bg-surface-darkAlt dark:text-slate-200 " +
-            "dark:hover:bg-slate-800";
-
+  const cls =
+    `btn btn-${variant}` +
+    (size === "sm" ? " btn-sm" : size === "lg" ? " btn-lg" : "") +
+    (className ? " " + className : "");
   return (
-    <button
-      {...rest}
-      disabled={disabled || loading}
-      className={base + " " + sizing + " " + palette + " " + className}
-    >
-      {loading && <Spinner />}
+    <button className={cls} disabled={loading || rest.disabled} {...rest}>
+      {loading ? (
+        <span className="sp" />
+      ) : icon ? (
+        <Icon name={icon} size={size === "sm" ? 14 : 16} />
+      ) : null}
       {children}
+      {iconRight ? <Icon name={iconRight} size={size === "sm" ? 14 : 16} /> : null}
     </button>
-  );
-}
-
-function Spinner() {
-  return (
-    <span
-      className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
-      aria-hidden
-    />
   );
 }
 

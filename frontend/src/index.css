@@ -2,16 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Body background, fonts, and CSS-variable colour tokens are owned by
+ * design-system.css (imported in main.jsx before this file). The
+ * Tailwind layers below stay loaded because the four remaining screens
+ * (App, AdminPanel, PatientDashboard, DoctorDashboard) still reference
+ * a handful of Tailwind utilities for chrome (page headers, inline
+ * Spinner/Error/Success helpers, font-mono spans). Those utilities
+ * continue to work alongside the design-system classes. */
+
 @layer base {
-  html {
-    @apply font-sans antialiased;
-  }
-  body {
-    @apply bg-surface text-slate-900;
-  }
-  .dark body {
-    @apply bg-surface-dark text-slate-100;
-  }
   h1,
   h2,
   h3 {

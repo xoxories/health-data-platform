@@ -24,8 +24,12 @@ function getInitialTheme() {
 function applyTheme(theme) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (theme === "dark") root.classList.add("dark");
-  else root.classList.remove("dark");
+  // Phase 7 — Stage 1: the design system reads `data-theme="dark"` /
+  // `data-theme="light"`, not the legacy `dark` class. Set the attribute
+  // and proactively clear the old class in case it's still lingering
+  // from a previous build (avoids both selectors fighting each other).
+  root.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+  root.classList.remove("dark");
 }
 
 export function ThemeProvider({ children }) {
