@@ -1,6 +1,6 @@
 # Health Data Sharing Platform
 
-![Admin Dashboard](screenshots/admin-dashboard.png)
+![Login Screen](screenshots/login-screen.jpg)
 
 A decentralized application (dApp) for securely sharing medical records
 between patients and healthcare providers on Ethereum. Patients own their
