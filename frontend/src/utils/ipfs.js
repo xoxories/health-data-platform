@@ -21,21 +21,6 @@ import {
 const PINATA_API_KEY = import.meta.env.VITE_PINATA_API_KEY || "";
 const PINATA_API_SECRET = import.meta.env.VITE_PINATA_API_SECRET || "";
 
-// TEMPORARY DIAGNOSTIC LOGS — remove once Pinata uploads work.
-// These print only safe metadata (length + first 4 chars), never full values.
-console.log(
-  "[ipfs] key length:",
-  import.meta.env.VITE_PINATA_API_KEY?.length ?? "undefined"
-);
-console.log(
-  "[ipfs] secret length:",
-  import.meta.env.VITE_PINATA_API_SECRET?.length ?? "undefined"
-);
-console.log(
-  "[ipfs] key starts with:",
-  import.meta.env.VITE_PINATA_API_KEY?.slice(0, 4) ?? "undefined"
-);
-
 const PINATA_PIN_FILE_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 const PINATA_GATEWAY = "https://gateway.pinata.cloud/ipfs";
 

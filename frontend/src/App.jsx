@@ -137,9 +137,18 @@ export default function App() {
     })();
 
     const handleAccountsChanged = (accs) => {
-      setAccount(
-        accs && accs[0] ? ethers.utils.getAddress(accs[0]) : null
-      );
+      // Reload on account change for the same reason chainChanged does:
+      // per-session caches (the patient/doctor ECIES keypair derived from
+      // a MetaMask signature, the doctor pubkey-mismatch flag, deniedRequests,
+      // cached records/consents/history) live in component state and would
+      // otherwise outlast the account swap, leading to silent cross-account
+      // wrap/unwrap confusion. The disconnect path (accs is empty) just
+      // clears state — no need to reload to "land on" the connect gate.
+      if (!accs || accs.length === 0) {
+        setAccount(null);
+        return;
+      }
+      window.location.reload();
     };
     const handleChainChanged = () => {
       // Hard reload on chain change. setState-in-place would leave any

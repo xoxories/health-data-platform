@@ -88,6 +88,16 @@ async function main() {
     console.log("Network :", hre.network.name);
     console.log("Deployer:", deployer.address);
     console.log("Balance :", hre.ethers.formatEther(balance), "ETH");
+
+    // Warn (don't throw) on a zero-balance live deploy. Hardhat-local
+    // deploys hit pre-funded accounts and never trip this; for testnets,
+    // testnet ETH is finite and noisy faucet flow means we'd rather log
+    // and let the user decide than block on a flap.
+    if (balance === 0n && hre.network.name !== "hardhat") {
+      console.warn(
+        "[deploy] WARNING: deployer has zero balance on this network. Fund the wallet via a faucet before retrying if the next tx fails."
+      );
+    }
     console.log();
 
     // 1. PatientRegistry — no constructor args.
