@@ -1,17 +1,17 @@
 // AUTO-GENERATED FILE — do not edit by hand.
 // Regenerated each time scripts/deploy.js runs.
 //
-// Network    : localhost
-// Generated  : 2026-05-13T12:36:40.334Z
+// Network    : sepolia
+// Generated  : 2026-05-30T05:55:03.744Z
 
-export const PATIENT_REGISTRY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-export const CONSENT_MANAGER_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-export const HEALTH_RECORD_STORAGE_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+export const PATIENT_REGISTRY_ADDRESS = "0x621A0Af4bE4AE611C200b80F1c0421177252dB5b";
+export const CONSENT_MANAGER_ADDRESS = "0xA1C6e25FbDc5C077b3E939c852c1B5cC6937074d";
+export const HEALTH_RECORD_STORAGE_ADDRESS = "0x42133E7d793b7eC76BC377D1e2c4dB38D80df97e";
 
 // Block number in which the last contract (HealthRecordStorage) was
 // deployed. Use as a fromBlock floor for queryFilter calls so they
 // don't blow past the RPC provider's eth_getLogs window.
-export const DEPLOY_BLOCK = 3;
+export const DEPLOY_BLOCK = 10951972;
 
 export const PatientRegistryABI = [
   {
