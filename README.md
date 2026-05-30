@@ -208,15 +208,15 @@ and switch to the network you deployed to (Hardhat Local on chain
 
 ## Deployment
 
-**Live demo:** _to be filled in after Vercel deploy_ — `https://<your-project>.vercel.app`
-*(requires MetaMask on Ethereum Sepolia · chain ID `11155111`)*
+**Live demo:** https://health-data-platform.vercel.app/
+_(requires MetaMask on Ethereum Sepolia · chain ID `11155111`)_
 
 **Verified contracts on Sepolia Etherscan:**
 
-| Contract | Address | Etherscan |
-|---|---|---|
-| `PatientRegistry` | `0x621A0Af4bE4AE611C200b80F1c0421177252dB5b` | [View ↗](https://sepolia.etherscan.io/address/0x621A0Af4bE4AE611C200b80F1c0421177252dB5b#code) |
-| `ConsentManager` | `0xA1C6e25FbDc5C077b3E939c852c1B5cC6937074d` | [View ↗](https://sepolia.etherscan.io/address/0xA1C6e25FbDc5C077b3E939c852c1B5cC6937074d#code) |
+| Contract              | Address                                      | Etherscan                                                                                      |
+| --------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `PatientRegistry`     | `0x621A0Af4bE4AE611C200b80F1c0421177252dB5b` | [View ↗](https://sepolia.etherscan.io/address/0x621A0Af4bE4AE611C200b80F1c0421177252dB5b#code) |
+| `ConsentManager`      | `0xA1C6e25FbDc5C077b3E939c852c1B5cC6937074d` | [View ↗](https://sepolia.etherscan.io/address/0xA1C6e25FbDc5C077b3E939c852c1B5cC6937074d#code) |
 | `HealthRecordStorage` | `0x42133E7d793b7eC76BC377D1e2c4dB38D80df97e` | [View ↗](https://sepolia.etherscan.io/address/0x42133E7d793b7eC76BC377D1e2c4dB38D80df97e#code) |
 
 Deploy block: `10951972`. All three contracts have public, verified source on
@@ -226,6 +226,7 @@ Etherscan — click any "View ↗" link to compare the verified source against
 ## Roadmap
 
 **Completed**
+
 - Three contracts deployed and verified on the Ethereum Sepolia testnet
 - End-to-end encrypted record sharing with a SHA-256-verified decrypt loop
 - Patient-mediated granular consent with per-category ECIES key wrapping
@@ -233,6 +234,7 @@ Etherscan — click any "View ↗" link to compare the verified source against
 - Full admin console with doctor lifecycle management
 
 **Future improvements**
+
 - Mainnet deployment (requires a professional security audit, HIPAA/GDPR
   compliance review, and key-management hardening — out of scope for this
   coursework version)
