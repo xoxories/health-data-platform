@@ -45,13 +45,13 @@ const QUERY_FILTER_LOOKBACK_BLOCKS = 49000;
 // the contract enum — patient-side and chain-side must agree on the
 // numeric mapping.
 const CATEGORIES = [
-  { value: 0, label: "General",       icon: "file" },
-  { value: 1, label: "Blood Test",    icon: "activity" },
-  { value: 2, label: "Imaging",       icon: "image" },
-  { value: 3, label: "Prescription",  icon: "pill" },
+  { value: 0, label: "General", icon: "file" },
+  { value: 1, label: "Blood Test", icon: "activity" },
+  { value: 2, label: "Imaging", icon: "image" },
+  { value: 3, label: "Prescription", icon: "pill" },
   { value: 4, label: "Mental Health", icon: "brain" },
-  { value: 5, label: "Genetic",       icon: "hash" },
-  { value: 6, label: "Other",         icon: "file" },
+  { value: 5, label: "Genetic", icon: "hash" },
+  { value: 6, label: "Other", icon: "file" },
 ];
 
 const ACCEPTED_FILE_TYPES = "application/pdf,image/*,text/plain";
@@ -67,9 +67,9 @@ const SEPOLIA_ETHERSCAN_TX = "https://sepolia.etherscan.io/tx/";
 // modal body to the success view when the real flow transitions to it).
 const UPLOAD_STEPS = [
   { key: "encrypting", label: "Encrypting" },
-  { key: "uploading",  label: "Uploading to IPFS" },
-  { key: "wrapping",   label: "Wrapping AES key" },
-  { key: "signing",    label: "Awaiting signature" },
+  { key: "uploading", label: "Uploading to IPFS" },
+  { key: "wrapping", label: "Wrapping AES key" },
+  { key: "signing", label: "Awaiting signature" },
   { key: "confirming", label: "Confirming tx" },
 ];
 
@@ -155,9 +155,7 @@ function categorizeUploadError(err, phase) {
       err.data?.message ||
       err.error?.message ||
       err.error?.data?.message;
-    return reason
-      ? `Transaction reverted: ${reason}`
-      : "Transaction reverted";
+    return reason ? `Transaction reverted: ${reason}` : "Transaction reverted";
   }
 
   // Network / RPC layer errors.
@@ -360,8 +358,7 @@ export default function PatientDashboard({
       const latestBlock =
         await contracts.consentManager.provider.getBlockNumber();
       const fromBlock =
-        DEPLOY_BLOCK ??
-        Math.max(0, latestBlock - QUERY_FILTER_LOOKBACK_BLOCKS);
+        DEPLOY_BLOCK ?? Math.max(0, latestBlock - QUERY_FILTER_LOOKBACK_BLOCKS);
 
       const filter = contracts.consentManager.filters.AccessGranted(
         account,
@@ -410,9 +407,7 @@ export default function PatientDashboard({
       if (allDoctors.length > 0 && contracts?.patientRegistry) {
         try {
           const infos = await Promise.all(
-            allDoctors.map((a) =>
-              contracts.patientRegistry.getDoctorInfo(a)
-            )
+            allDoctors.map((a) => contracts.patientRegistry.getDoctorInfo(a))
           );
           const next = new Map(doctorInfo);
           allDoctors.forEach((addr, i) => {
@@ -485,10 +480,7 @@ export default function PatientDashboard({
 
       const categoryMap = new Map();
       for (const ev of storedRes.events) {
-        categoryMap.set(
-          ev.args.recordId.toString(),
-          Number(ev.args.category)
-        );
+        categoryMap.set(ev.args.recordId.toString(), Number(ev.args.category));
       }
 
       // For an emergency record-access at time T by doctor D, the
@@ -741,17 +733,15 @@ export default function PatientDashboard({
   // -- per-route body --
   let body;
   if (route === "upload") {
-    body = (
-      <UploadPanel
-        onOpen={openUpload}
-      />
-    );
+    body = <UploadPanel onOpen={openUpload} />;
   } else if (route === "records") {
     body = (
       <UICard
         title="My records"
         icon="records"
-        sub={`${records.length} encrypted record${records.length === 1 ? "" : "s"} on IPFS`}
+        sub={`${records.length} encrypted record${
+          records.length === 1 ? "" : "s"
+        } on IPFS`}
         action={
           <UIButton size="sm" icon="upload" onClick={openUpload}>
             Upload record
@@ -773,7 +763,9 @@ export default function PatientDashboard({
       <UICard
         title="Active consents"
         icon="shield"
-        sub={`${activeConsents.length} doctor${activeConsents.length === 1 ? "" : "s"} currently authorized`}
+        sub={`${activeConsents.length} doctor${
+          activeConsents.length === 1 ? "" : "s"
+        } currently authorized`}
         flush
       >
         <ConsentsList
@@ -943,11 +935,7 @@ function Overview({
   return (
     <>
       <div className="stats-grid">
-        <UIStat
-          label="Total records"
-          icon="records"
-          value={records.length}
-        />
+        <UIStat label="Total records" icon="records" value={records.length} />
         <UIStat
           label="Active consents"
           icon="shield"
@@ -1012,7 +1000,9 @@ function Overview({
         <UICard
           title="Pending access requests"
           icon="bell"
-          sub={`${pending.length} doctor${pending.length === 1 ? "" : "s"} awaiting consent`}
+          sub={`${pending.length} doctor${
+            pending.length === 1 ? "" : "s"
+          } awaiting consent`}
         >
           <PendingRequestsList
             pending={pending}
@@ -1115,8 +1105,8 @@ function UploadPanel({ onOpen }) {
             </div>
             <div className="dz-title">Click to pick a file</div>
             <div className="dz-sub">
-              PDF, JPG, PNG, plain text up to {MAX_UPLOAD_MB} MB ·
-              AES‑256‑GCM encrypted client‑side
+              PDF, JPG, PNG, plain text up to {MAX_UPLOAD_MB} MB · AES‑256‑GCM
+              encrypted client‑side
             </div>
           </button>
           <div style={{ marginTop: 16 }}>
@@ -1159,8 +1149,8 @@ function UploadPanel({ onOpen }) {
               marginBottom: 14,
             }}
           >
-            Your file is encrypted before upload. Only wallets you grant
-            consent to can decrypt.
+            Your file is encrypted before upload. Only wallets you grant consent
+            to can decrypt.
           </div>
           <ol
             style={{
@@ -1173,11 +1163,31 @@ function UploadPanel({ onOpen }) {
             }}
           >
             {[
-              { i: 1, t: "Generate AES‑256 key",          s: "Random per file · 96‑bit IV" },
-              { i: 2, t: "AES‑GCM encrypt the file",      s: "Tag verifies on decrypt" },
-              { i: 3, t: "Upload ciphertext to IPFS",     s: "Pinata gateway · returns CID" },
-              { i: 4, t: "Wrap AES key with your pubkey", s: "93‑byte ECIES envelope" },
-              { i: 5, t: "storeRecord(CID, category, wrappedKey)", s: "On‑chain transaction" },
+              {
+                i: 1,
+                t: "Generate AES‑256 key",
+                s: "Random per file · 96‑bit IV",
+              },
+              {
+                i: 2,
+                t: "AES‑GCM encrypt the file",
+                s: "Tag verifies on decrypt",
+              },
+              {
+                i: 3,
+                t: "Upload ciphertext to IPFS",
+                s: "Pinata gateway · returns CID",
+              },
+              {
+                i: 4,
+                t: "Wrap AES key with your pubkey",
+                s: "93‑byte ECIES envelope",
+              },
+              {
+                i: 5,
+                t: "storeRecord(CID, category, wrappedKey)",
+                s: "On‑chain transaction",
+              },
             ].map((s) => (
               <li
                 key={s.i}
@@ -1325,7 +1335,9 @@ function UploadModal({
             </div>
             <div className="dz-sub">
               {file
-                ? `${formatBytes(file.size)} · ${file.type || "application/octet-stream"} · ready to encrypt`
+                ? `${formatBytes(file.size)} · ${
+                    file.type || "application/octet-stream"
+                  } · ready to encrypt`
                 : `PDF, JPG, PNG, plain text up to ${MAX_UPLOAD_MB} MB`}
             </div>
           </button>
@@ -1410,7 +1422,8 @@ function UploadModal({
               gap: 10,
               padding: "12px 14px",
               borderRadius: 10,
-              background: "var(--ok-soft, color-mix(in oklch, var(--ok) 12%, transparent))",
+              background:
+                "var(--ok-soft, color-mix(in oklch, var(--ok) 12%, transparent))",
               border:
                 "1px solid color-mix(in oklch, var(--ok) 30%, transparent)",
               color: "var(--ok)",
@@ -1502,8 +1515,7 @@ function RegistrationSection({ contracts, onRegistered }) {
           marginBottom: 14,
         }}
       >
-        You're not yet registered. Enter your display name to register
-        on-chain.
+        You're not yet registered. Enter your display name to register on-chain.
       </p>
       <form
         onSubmit={submit}
@@ -1725,9 +1737,7 @@ function RecordsTable({
                     opacity: deletingId === r.recordId ? 0.4 : 1,
                   }}
                   disabled={deletingId === r.recordId}
-                  title={
-                    deletingId === r.recordId ? "Deleting…" : "Delete"
-                  }
+                  title={deletingId === r.recordId ? "Deleting…" : "Delete"}
                   onClick={() => deleteRecord(r.recordId)}
                   aria-label="Delete record"
                 >
@@ -1896,7 +1906,15 @@ function PendingCard({
         // Unwrap the patient-wrapped AES key with the patient's privkey,
         // then re-wrap it for the doctor.
         const patientWrapped = ethers.utils.arrayify(rec.encryptedKey);
-        const rawAESKey = unwrapKeyForSelf(patientWrapped, patientKp.privateKey);
+        const rawAESKey = unwrapKeyForSelf(
+          patientWrapped,
+          patientKp.privateKey
+        );
+        if (rawAESKey.length !== 32) {
+          throw new Error(
+            `Grant unwrap produced ${rawAESKey.length} bytes, expected 32`
+          );
+        }
         const doctorWrapped = wrapKeyForRecipient(
           rawAESKey,
           compressedDoctorPubKey
@@ -1915,7 +1933,9 @@ function PendingCard({
         if (!entries || entries.length === 0) continue;
         if (entries.length > BUNDLE_MAX_ENTRIES) {
           throw new Error(
-            `Category "${categoryLabel(cat)}" has ${entries.length} records — max ${BUNDLE_MAX_ENTRIES} per category bundle.`
+            `Category "${categoryLabel(cat)}" has ${
+              entries.length
+            } records — max ${BUNDLE_MAX_ENTRIES} per category bundle.`
           );
         }
         categoryArr.push(cat);
@@ -1923,9 +1943,7 @@ function PendingCard({
       }
 
       if (categoryArr.length === 0) {
-        setError(
-          "You have no records in the selected categories to share."
-        );
+        setError("You have no records in the selected categories to share.");
         setStatus(null);
         return;
       }
@@ -1951,13 +1969,14 @@ function PendingCard({
     }
   }
 
-  const buttonLabel = {
-    checking: "Checking key…",
-    deriving: "Deriving your key…",
-    wrapping: "Wrapping record keys…",
-    signing: "Waiting for wallet…",
-    confirming: "Confirming transaction…",
-  }[status] || "Grant access";
+  const buttonLabel =
+    {
+      checking: "Checking key…",
+      deriving: "Deriving your key…",
+      wrapping: "Wrapping record keys…",
+      signing: "Waiting for wallet…",
+      confirming: "Confirming transaction…",
+    }[status] || "Grant access";
 
   return (
     <div
@@ -2030,11 +2049,7 @@ function PendingCard({
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon
-            name="clock"
-            size={14}
-            style={{ color: "var(--ink-3)" }}
-          />
+          <Icon name="clock" size={14} style={{ color: "var(--ink-3)" }} />
           <span style={{ fontSize: 12.5, color: "var(--ink-2)" }}>
             Expires in
           </span>
@@ -2233,8 +2248,7 @@ function ConsentRow({ consent, info, contracts, onRevoked }) {
 // ---------------------------------------------------------------------
 
 function AccessTimeline({ entries, loading, error }) {
-  if (loading)
-    return <CenteredNotice>Loading access history…</CenteredNotice>;
+  if (loading) return <CenteredNotice>Loading access history…</CenteredNotice>;
   if (error) {
     return (
       <div style={{ padding: "0 20px 16px" }}>
@@ -2266,9 +2280,7 @@ function AccessTimeline({ entries, loading, error }) {
             </div>
             <div className="body">
               <div className="head">
-                <span>
-                  {isEmg ? "Emergency access" : "Record accessed"}
-                </span>
+                <span>{isEmg ? "Emergency access" : "Record accessed"}</span>
                 <StatusPill status={isEmg ? "emergency" : "access"}>
                   {isEmg ? "Emergency" : "Access"}
                 </StatusPill>
@@ -2304,8 +2316,8 @@ function AccessTimeline({ entries, loading, error }) {
                     e.justification
                   ) : (
                     <span style={{ fontStyle: "italic", opacity: 0.7 }}>
-                      (no matching EmergencyAccessInvoked event found within
-                      the audit window)
+                      (no matching EmergencyAccessInvoked event found within the
+                      audit window)
                     </span>
                   )}
                 </div>
@@ -2345,8 +2357,7 @@ function ErrorBox({ children }) {
         color: "var(--danger)",
         fontSize: 13,
         fontWeight: 500,
-        border:
-          "1px solid color-mix(in oklch, var(--danger) 28%, transparent)",
+        border: "1px solid color-mix(in oklch, var(--danger) 28%, transparent)",
       }}
       role="alert"
     >

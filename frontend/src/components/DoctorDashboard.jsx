@@ -32,13 +32,13 @@ import { Pipeline } from "./ui/StatusPipeline.jsx";
 // ---------------------------------------------------------------------
 
 const CATEGORIES = [
-  { value: 0, label: "General",       icon: "file" },
-  { value: 1, label: "Blood Test",    icon: "activity" },
-  { value: 2, label: "Imaging",       icon: "image" },
-  { value: 3, label: "Prescription",  icon: "pill" },
+  { value: 0, label: "General", icon: "file" },
+  { value: 1, label: "Blood Test", icon: "activity" },
+  { value: 2, label: "Imaging", icon: "image" },
+  { value: 3, label: "Prescription", icon: "pill" },
   { value: 4, label: "Mental Health", icon: "brain" },
-  { value: 5, label: "Genetic",       icon: "hash" },
-  { value: 6, label: "Other",         icon: "file" },
+  { value: 5, label: "Genetic", icon: "hash" },
+  { value: 6, label: "Other", icon: "file" },
 ];
 
 const DEPLOY_BLOCK = ContractConfig.DEPLOY_BLOCK;
@@ -51,10 +51,10 @@ const SIGNATURE_PROMPT_MESSAGE =
   "can wrap symmetric keys for you.";
 
 const PUBLISH_STEPS = [
-  { key: "deriving",   label: "Deriving keypair" },
-  { key: "signing",    label: "Waiting for signature" },
+  { key: "deriving", label: "Deriving keypair" },
+  { key: "signing", label: "Waiting for signature" },
   { key: "confirming", label: "Confirming transaction" },
-  { key: "verifying",  label: "Verifying on-chain" },
+  { key: "verifying", label: "Verifying on-chain" },
 ];
 
 const ROUTE_TITLES = {
@@ -81,7 +81,9 @@ function describeError(err) {
 
 function categoryLabel(value) {
   if (value == null) return "";
-  return CATEGORIES.find((c) => c.value === Number(value))?.label || String(value);
+  return (
+    CATEGORIES.find((c) => c.value === Number(value))?.label || String(value)
+  );
 }
 
 function categoryIcon(value) {
@@ -182,7 +184,9 @@ function parseFilenameHeader(decryptedBytes, fallbackName) {
 }
 
 function triggerDownload(bytes, filename, mimetype) {
-  const blob = new Blob([bytes], { type: mimetype || "application/octet-stream" });
+  const blob = new Blob([bytes], {
+    type: mimetype || "application/octet-stream",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -242,10 +246,7 @@ export default function DoctorDashboard({
   // Bumped after every successful `View` tx so the access-history feed
   // re-fetches without requiring a manual Refresh click.
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-  const bumpHistory = useCallback(
-    () => setHistoryRefreshKey((n) => n + 1),
-    []
-  );
+  const bumpHistory = useCallback(() => setHistoryRefreshKey((n) => n + 1), []);
 
   // ---- Initial fetch: role + pubkey + own profile ----
 
@@ -586,8 +587,8 @@ export default function DoctorDashboard({
               lineHeight: 1.55,
             }}
           >
-            Your address is not registered as a doctor. Please contact the
-            admin to be registered.
+            Your address is not registered as a doctor. Please contact the admin
+            to be registered.
           </p>
         </UICard>
       </div>
@@ -597,10 +598,7 @@ export default function DoctorDashboard({
   // Doctor present but pubkey not yet published — full-screen CTA.
   // The check on `onChainPubKey !== null` rules out the loading state so
   // the CTA never flashes while the read is in flight.
-  if (
-    onChainPubKey !== null &&
-    !isPubKeyPublished(onChainPubKey)
-  ) {
+  if (onChainPubKey !== null && !isPubKeyPublished(onChainPubKey)) {
     return (
       <div className="space-y-8">
         <DashboardHeader account={account} title="Doctor Dashboard" />
@@ -627,7 +625,9 @@ export default function DoctorDashboard({
 
   let body;
   if (route === "request") {
-    body = <RequestAccessSection contracts={contracts} account={account} full />;
+    body = (
+      <RequestAccessSection contracts={contracts} account={account} full />
+    );
   } else if (route === "consents") {
     body = (
       <ConsentsCard
@@ -734,8 +734,7 @@ function PubKeyMismatchBanner() {
         borderRadius: 12,
         background: "var(--danger-soft)",
         color: "var(--danger)",
-        border:
-          "1px solid color-mix(in oklch, var(--danger) 30%, transparent)",
+        border: "1px solid color-mix(in oklch, var(--danger) 30%, transparent)",
         display: "flex",
         gap: 12,
         alignItems: "flex-start",
@@ -796,7 +795,9 @@ function Overview({
           icon="shield"
           value={grants.length}
           tone="ok"
-          delta={`${totalRecords} record${totalRecords === 1 ? "" : "s"} accessible`}
+          delta={`${totalRecords} record${
+            totalRecords === 1 ? "" : "s"
+          } accessible`}
         />
         <UIStat
           label="Records accessed"
@@ -1311,7 +1312,9 @@ function DoctorConsentCard({
           >
             {open
               ? "Hide records"
-              : `View ${grant.records.length} record${grant.records.length === 1 ? "" : "s"}`}
+              : `View ${grant.records.length} record${
+                  grant.records.length === 1 ? "" : "s"
+                }`}
           </UIButton>
         </div>
       </div>
@@ -1436,12 +1439,9 @@ function ViewRecordRow({
           `No access — wrapped key not found in bundle for record #${record.recordId}. ${err.message}`
         );
       }
-      let rawAESKey;
-      try {
-        rawAESKey = unwrapKeyForSelf(myWrap, kp.privateKey);
-      } catch {
+      if (rawAESKey.length !== 32) {
         throw new Error(
-          "Decrypt failed — likely wrong account or pubkey mismatch."
+          `Doctor unwrap produced ${rawAESKey.length} bytes, expected 32`
         );
       }
 
@@ -1464,6 +1464,9 @@ function ViewRecordRow({
       // ---- 4. Decrypt ----
       setStatus("decrypting");
       const aesKey = await importRawKey(rawAESKey);
+      if (iv.length !== 12) {
+        throw new Error(`Invalid IV length ${iv.length}, expected 12`);
+      }
       let plaintext;
       try {
         plaintext = await decryptFile(ciphertextWithTag, aesKey, iv);
@@ -1491,9 +1494,7 @@ function ViewRecordRow({
       const msg = describeError(err);
       // Categorise per spec.
       if (msg.includes("no consent") || msg.includes("no emergency access")) {
-        setError(
-          "No access — consent revoked, expired, or category mismatch."
-        );
+        setError("No access — consent revoked, expired, or category mismatch.");
       } else if (msg.includes("Decrypt failed")) {
         setError(msg);
       } else if (msg.includes("IPFS fetch failed")) {
@@ -1507,13 +1508,14 @@ function ViewRecordRow({
     }
   }
 
-  const buttonLabel = {
-    signing: "Confirming access…",
-    fetching: "Fetching from IPFS…",
-    unwrapping: "Unwrapping key…",
-    decrypting: "Decrypting…",
-    done: "Downloaded ✓",
-  }[status] || "View";
+  const buttonLabel =
+    {
+      signing: "Confirming access…",
+      fetching: "Fetching from IPFS…",
+      unwrapping: "Unwrapping key…",
+      decrypting: "Decrypting…",
+      done: "Downloaded ✓",
+    }[status] || "View";
 
   return (
     <tr>
@@ -1565,8 +1567,7 @@ function ViewRecordRow({
 // ---------------------------------------------------------------------
 
 function AccessTimeline({ entries, loading, error }) {
-  if (loading)
-    return <CenteredNotice>Loading access history…</CenteredNotice>;
+  if (loading) return <CenteredNotice>Loading access history…</CenteredNotice>;
   if (error) {
     return (
       <div style={{ padding: "0 20px 16px" }}>
@@ -1598,9 +1599,7 @@ function AccessTimeline({ entries, loading, error }) {
             </div>
             <div className="body">
               <div className="head">
-                <span>
-                  {isEmg ? "Emergency access" : "Record accessed"}
-                </span>
+                <span>{isEmg ? "Emergency access" : "Record accessed"}</span>
                 <StatusPill status={isEmg ? "emergency" : "access"}>
                   {isEmg ? "Emergency" : "Access"}
                 </StatusPill>
@@ -1636,8 +1635,8 @@ function AccessTimeline({ entries, loading, error }) {
                     e.justification
                   ) : (
                     <span style={{ fontStyle: "italic", opacity: 0.7 }}>
-                      (no matching EmergencyAccessInvoked event found within
-                      the audit window)
+                      (no matching EmergencyAccessInvoked event found within the
+                      audit window)
                     </span>
                   )}
                 </div>
@@ -1760,9 +1759,7 @@ function KeyView({
             loading={verifying}
             disabled={verifying}
           >
-            {verifying
-              ? "Deriving keypair…"
-              : "Derive keypair to verify match"}
+            {verifying ? "Deriving keypair…" : "Derive keypair to verify match"}
           </UIButton>
           <div
             style={{
@@ -1771,8 +1768,8 @@ function KeyView({
               color: "var(--ink-3)",
             }}
           >
-            Triggers a MetaMask signature on the canonical derivation
-            message. Required once per session.
+            Triggers a MetaMask signature on the canonical derivation message.
+            Required once per session.
           </div>
         </div>
       )}
@@ -1798,8 +1795,7 @@ function ErrorBox({ children }) {
         color: "var(--danger)",
         fontSize: 13,
         fontWeight: 500,
-        border:
-          "1px solid color-mix(in oklch, var(--danger) 28%, transparent)",
+        border: "1px solid color-mix(in oklch, var(--danger) 28%, transparent)",
       }}
     >
       {children}

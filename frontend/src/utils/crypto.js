@@ -79,7 +79,8 @@ function assertU8(value, expectedLen, name) {
 }
 
 function hexToBytes(hex) {
-  const clean = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
+  const clean =
+    hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
   if (clean.length % 2 !== 0) {
     throw new Error("Hex string has odd length");
   }
@@ -224,11 +225,15 @@ export async function importRawKey(raw) {
  */
 export async function deriveECIESKeypairFromSigner(signer) {
   if (typeof signer?.signMessage !== "function") {
-    throw new TypeError("deriveECIESKeypairFromSigner: signer.signMessage missing");
+    throw new TypeError(
+      "deriveECIESKeypairFromSigner: signer.signMessage missing"
+    );
   }
   const signature = await signer.signMessage(KEYPAIR_SIG_MESSAGE);
   if (typeof signature !== "string") {
-    throw new Error("signer.signMessage must return a hex string");
+    throw new Error(
+      "signer.signMessage must return a hex string"
+    );
   }
   const sigBytes = hexToBytes(signature);
 
@@ -473,7 +478,9 @@ export function findWrappedKeyForRecord(bundle, recordId) {
   const hit = entries.find((e) => e.recordId === recordId);
   if (!hit) {
     throw new Error(
-      `findWrappedKeyForRecord: no entry for recordId ${recordId.toString()} in bundle of ${entries.length} entries`
+      `findWrappedKeyForRecord: no entry for recordId ${recordId.toString()} in bundle of ${
+        entries.length
+      } entries`
     );
   }
   return hit.wrapped;
