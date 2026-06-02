@@ -1430,7 +1430,9 @@ function ViewRecordRow({
 
       // ---- 2. Find my entry in the bundle and unwrap it ----
       setStatus("unwrapping");
+
       const kp = await ensureDoctorKeypair();
+
       let myWrap;
       try {
         myWrap = findWrappedKeyForRecord(bundle, record.recordId);
@@ -1439,6 +1441,17 @@ function ViewRecordRow({
           `No access — wrapped key not found in bundle for record #${record.recordId}. ${err.message}`
         );
       }
+
+      let rawAESKey;
+
+      try {
+        rawAESKey = unwrapKeyForSelf(myWrap, kp.privateKey);
+      } catch {
+        throw new Error(
+          "Decrypt failed — likely wrong account or pubkey mismatch."
+        );
+      }
+
       if (rawAESKey.length !== 32) {
         throw new Error(
           `Doctor unwrap produced ${rawAESKey.length} bytes, expected 32`

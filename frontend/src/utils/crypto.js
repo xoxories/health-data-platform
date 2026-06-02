@@ -231,9 +231,7 @@ export async function deriveECIESKeypairFromSigner(signer) {
   }
   const signature = await signer.signMessage(KEYPAIR_SIG_MESSAGE);
   if (typeof signature !== "string") {
-    throw new Error(
-      "signer.signMessage must return a hex string"
-    );
+    throw new Error("signer.signMessage must return a hex string");
   }
   const sigBytes = hexToBytes(signature);
 
